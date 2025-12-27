@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>RulingSafe</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+    <!-- SELECT STORAGE LOCATION SCREEN -->
+<div id="select-location-screen" class="center-screen hidden">
+
+  <img src="assets/logo-white.svg" class="logo" />
+
+  <h2>Choose Storage Location</h2>
+  <p class="welcome-text">
+    Select where RulingSafe will store all documents and data.
+  </p>
+
+  <button class="primary-btn" id="select-location-btn">
+    📁 Select Folder
+  </button>
+
+  <p class="hint">
+    You can back up this folder anytime.
+  </p>
+
+</div>
+
+
+  <!-- FIRST TIME SCREEN -->
+  <div id="first-time-screen" class="center-screen">
+
+    <img src="assets/logo-white.svg" alt="RulingSafe Logo" class="logo" />
+
+    <h1 class="app-title">RulingSafe</h1>
+    <p class="subtitle">Offline Legal Ruling Manager</p>
+
+    <div class="divider"></div>
+
+    <h2 class="welcome-title">Welcome to RulingSafe</h2>
+    <p class="welcome-text">
+      Create your first user to get started.
+    </p>
+
+    <button class="primary-btn" id="create-user-btn">
+      + Create User
+    </button>
+
+  </div>
+
+  <!-- CREATE USER MODAL -->
+<div id="create-user-modal" class="modal hidden">
+
+  <div class="modal-card">
+    <h3>Create New User</h3>
+
+    <label>Username *</label>
+    <input type="text" id="username" placeholder="e.g. user123" required />
+
+    <small class="hint">Username cannot be changed later</small>
+
+    <label>First Name</label>
+    <input type="text" id="first-name" required />
+
+    <label>Middle Name</label>
+    <input type="text" id="middle-name" />
+
+    <label>Last Name</label>
+    <input type="text" id="last-name" />
+
+    <div class="modal-actions">
+      <button class="secondary-btn" id="cancel-user">Cancel</button>
+      <button class="primary-btn" id="save-user">Create User</button>
+    </div>
+  </div>
+</div>
+
+<!-- EMPTY WORKSPACE SCREEN -->
+<div id="empty-workspace" class="hidden">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <h3>RulingSafe</h3>
+      <span class="subtitle-small">Offline Legal Ruling Manager</span>
+    </div>
+
+    <div class="topbar-center">
+      <input
+        type="text"
+        placeholder="Search by Case Name or Case No…"
+        disabled
+      />
+    </div>
+
+    <div class="topbar-right">
+      <div class="avatar">U</div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="empty-content">
+    <h2>No rulings added yet</h2>
+    <p>Add your first ruling to get started</p>
+
+    <button class="primary-btn" id="add-first-ruling">
+      + Add New Ruling
+    </button>
+  </div>
+
+</div>
+
+<!-- ADD RULING MODAL -->
+<div id="add-ruling-modal" class="modal hidden">
+
+  <div class="modal-card">
+    <h3>Add New Ruling</h3>
+
+    <label>Case Name *</label>
+    <input type="text" id="case-name" placeholder="e.g. ABC vs State" />
+
+    <label>Year *</label>
+    <input type="number" id="case-year" placeholder="e.g. 2023" />
+
+    <label>Case Number</label>
+    <input type="text" id="case-no" />
+
+    <label>Court</label>
+    <select id="court">
+      <option value="">Select Court</option>
+      <option>Supreme Court</option>
+      <option>High Court</option>
+      <option>District Court</option>
+    </select>
+
+    <label>Result</label>
+    <input type="text" id="result" placeholder="Allowed / Dismissed" />
+
+    <label>Description</label>
+    <textarea id="description"></textarea>
+
+    <div class="modal-actions">
+      <button class="secondary-btn" id="cancel-ruling">Cancel</button>
+      <button class="primary-btn" id="save-ruling">Save Ruling</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="hidden">
+
+  <div class="topbar">
+    <div class="topbar-left">
+      <h3>RulingSafe</h3>
+      <span class="subtitle-small">Offline Legal Ruling Manager</span>
+    </div>
+
+    <div class="topbar-center">
+      <input placeholder="Search by Case Name or Case No…" />
+    </div>
+
+    <div class="topbar-right">
+      <div class="avatar">U</div>
+    </div>
+  </div>
+
+  <div class="dashboard-content">
+    <button class="primary-btn">+ Add New Ruling</button>
+
+    <table class="ruling-table">
+      <thead>
+        <tr>
+          <th>Case Name</th>
+          <th>Year</th>
+          <th>Court</th>
+          <th>Result</th>
+        </tr>
+      </thead>
+      <tbody id="ruling-table-body"></tbody>
+    </table>
+  </div>
+
+</div>
+
+
+
+  <script src="js/app.js"></script>
+</body>
+</html>
