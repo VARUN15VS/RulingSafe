@@ -1,7 +1,8 @@
 import os
 import json
+import uuid
 from datetime import datetime
-from backend.config_manager import get_base_path
+from backend.config_manager import get_base_path, load_config
 from backend.app_state import get_active_user
 
 
@@ -28,13 +29,27 @@ def _cases_dir():
     user_root, _ = _ensure_context()
     return os.path.join(user_root, "cases")
 
-
 def load_cases():
     path = _cases_file()
+
     if not os.path.exists(path):
         return []
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f).get("cases", [])
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        # handle both formats safely
+        if isinstance(data, dict):
+            return data.get("cases", [])
+        elif isinstance(data, list):
+            return data
+        else:
+            return []
+
+    except json.JSONDecodeError:
+        # file exists but is empty/corrupted
+        return []
 
 
 def save_cases(cases):
@@ -87,3 +102,117 @@ def create_case(data):
     os.makedirs(os.path.join(case_folder, "documents"), exist_ok=True)
 
     return case
+
+
+# =========================================================
+# INTERNAL HELPERS
+# =========================================================
+
+def _links_file(case_folder: str) -> str:
+    """
+    Returns absolute path to links.json inside a case folder
+    """
+    return os.path.join(case_folder, "links.json")
+
+
+def _safe_read_json(path: str) -> dict:
+    """
+    Safely read JSON file.
+    Returns empty structure if file is missing or corrupted.
+    """
+    if not os.path.exists(path):
+        return {"links": []}
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read().strip()
+            if not content:
+                return {"links": []}
+            return json.loads(content)
+    except (json.JSONDecodeError, OSError):
+        # Never crash the app because of bad JSON
+        return {"links": []}
+
+
+def _safe_write_json(path: str, data: dict):
+    """
+    Atomically write JSON to disk
+    """
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+
+# =========================================================
+# PUBLIC API
+# =========================================================
+
+def load_links(case_folder: str) -> list:
+    """
+    Load all links for a case
+    """
+    path = _links_file(case_folder)
+    data = _safe_read_json(path)
+    return data.get("links", [])
+
+
+def add_case_link(case_folder: str, title: str, url: str, platform: str = ""):
+    """
+    Add a new link to the case
+    """
+    path = _links_file(case_folder)
+    data = _safe_read_json(path)
+
+    new_link = {
+        "id": str(uuid.uuid4()),
+        "title": title.strip(),
+        "url": url.strip(),
+        "platform": platform.strip(),
+        "created_at": datetime.now().isoformat()
+    }
+
+    data.setdefault("links", []).append(new_link)
+    _safe_write_json(path, data)
+
+    return new_link
+
+
+def delete_case_link(case_folder: str, link_id: str) -> bool:
+    """
+    Delete a link by ID
+    Returns True if deleted, False otherwise
+    """
+    path = _links_file(case_folder)
+    data = _safe_read_json(path)
+
+    original_len = len(data.get("links", []))
+    data["links"] = [l for l in data.get("links", []) if l["id"] != link_id]
+
+    if len(data["links"]) == original_len:
+        return False  # nothing deleted
+
+    _safe_write_json(path, data)
+    return True
+
+def get_case_folder(case_key: str) -> str:
+    base_path = get_base_path()
+    user = get_active_user()
+
+    if not base_path:
+        raise RuntimeError("Base path not set")
+    if not user:
+        raise RuntimeError("No active user")
+
+    case_folder = os.path.join(
+        base_path,
+        "users",
+        user,
+        "cases",
+        case_key
+    )
+
+    if not os.path.exists(case_folder):
+        raise RuntimeError(f"Case folder not found: {case_key}")
+
+    return case_folder
+

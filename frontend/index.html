@@ -133,10 +133,6 @@
       <option>High Court</option>
       <option>District Court</option>
     </select>
-
-    <label>Result</label>
-    <input type="text" id="result" placeholder="Allowed / Dismissed" />
-
     <label>Description</label>
     <textarea id="description"></textarea>
 
@@ -166,16 +162,43 @@
     </div>
   </div>
 
-  <div class="dashboard-content">
-    <button class="primary-btn">+ Add New Ruling</button>
+  <!-- ACTION + FILTER BAR -->
+  <div class="table-toolbar">
+    <button class="primary-btn" id="add-new-ruling">
+      + Add New Ruling
+    </button>
+
+    <div class="filters">
+      <div class="filter-item">
+        Filters ▾
+      </div>
+
+      <div class="filter-item">
+        Court: <span>All</span> ▾
+      </div>
+
+      <div class="filter-item">
+        Year: <span>All</span> ▾
+      </div>
+
+      <div class="filter-item">
+        Sort: <span>Last Updated</span> ▾
+      </div>
+    </div>
+  </div>
 
     <table class="ruling-table">
       <thead>
         <tr>
+            <th>Case Number</th>
           <th>Case Name</th>
           <th>Year</th>
           <th>Court</th>
-          <th>Result</th>
+          <th>Description</th>
+          <th>Last Updated</th>
+          <th>Documents</th>
+    <th>Links</th>
+    <th>Actions</th>
         </tr>
       </thead>
       <tbody id="ruling-table-body"></tbody>
@@ -184,6 +207,43 @@
 
 </div>
 
+<div id="doc-menu" class="doc-menu hidden">
+  <button id="add-doc">➕ Add Documents</button>
+  <button id="open-doc">📂 Open Documents</button>
+</div>
+
+<!-- LINKS MODAL -->
+<div id="links-modal" class="modal hidden">
+  <div class="modal-card large">
+
+    <h3>Case Links</h3>
+
+    <div id="links-list"></div>
+
+    <div id="no-links" class="hint hidden">
+      No links added yet.
+    </div>
+
+    <hr />
+
+    <h4>Add New Link</h4>
+
+    <label>Title *</label>
+    <input id="link-title" />
+
+    <label>Platform</label>
+    <input id="link-platform" placeholder="Youtube (optional)" />
+
+    <label>Link *</label>
+    <input id="link-url" />
+
+    <div class="modal-actions">
+      <button class="secondary-btn" id="close-links">Close</button>
+      <button class="primary-btn" id="save-link">Add Link</button>
+    </div>
+
+  </div>
+</div>
 
 
   <script src="js/app.js"></script>

@@ -1,10 +1,11 @@
 import os
 import webview
+from datetime import datetime
 
 from backend.config_manager import set_base_path, get_base_path
 from backend.user_manager import create_user
 from backend.app_state import set_active_user, has_user
-from backend.case_manager import create_case, load_cases
+from backend.case_manager import create_case, load_cases, load_links, delete_case_link,  add_case_link, get_case_folder
 
 
 class Api:
@@ -58,6 +59,69 @@ class Api:
 
     def get_cases(self):
         return {"status": "ok", "cases": load_cases()}
+    
+    def add_documents(self, data):
+        case_key = data["caseKey"]
+        folder = get_case_folder(case_key)
+
+        from backend.document_manager import add_documents
+        add_documents(folder)
+
+        return {"status": "ok"}
+
+    def open_documents(self, data):
+        case_key = data["caseKey"]
+        folder = get_case_folder(case_key)
+
+        from backend.document_manager import open_documents
+        open_documents(folder)
+
+        return {"status": "ok"}
+
+    
+
+    # ==========================
+    # LINKS MANAGEMENT
+    # ==========================
+
+    def get_links(self, data):
+        """
+        Get all links for a case
+        """
+        folder = get_case_folder(data["caseName"], data["year"])
+        links = load_links(folder)
+        return {"status": "ok", "links": links}
+
+
+    def add_link(self, data):
+        """
+        Add a new link to a case
+        """
+        folder = get_case_folder(data["caseName"], data["year"])
+
+        link = add_case_link(
+            folder,
+            data["title"],
+            data["url"],
+            data.get("platform", "")
+        )
+
+        return {"status": "ok", "link": link}
+
+
+    def delete_link(self, data):
+        """
+        Delete a link by ID
+        """
+        folder = get_case_folder(data["caseName"], data["year"])
+
+        deleted = delete_case_link(folder, data["id"])
+
+        return {
+            "status": "ok" if deleted else "not_found",
+            "deleted": deleted
+        }
+
 
 
 
