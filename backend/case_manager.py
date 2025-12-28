@@ -1,6 +1,7 @@
 import os
 import json
 import uuid
+import shutil
 from datetime import datetime
 from backend.config_manager import get_base_path, load_config
 from backend.app_state import get_active_user
@@ -216,3 +217,47 @@ def get_case_folder(case_key: str) -> str:
 
     return case_folder
 
+def update_case(old_key: str, data: dict):
+    cases = load_cases()
+    case = next((c for c in cases if c["key"] == old_key), None)
+
+    if not case:
+        raise ValueError("Case not found")
+
+    new_name = data["case_name"].strip()
+    new_year = data["year"].strip()
+    new_key = f"{new_name}_{new_year}"
+
+    # Clash check
+    if new_key != old_key and any(c["key"] == new_key for c in cases):
+        raise ValueError("Another case with same name and year exists")
+
+    # Rename folder if key changed
+    if new_key != old_key:
+        old_folder = os.path.join(_cases_dir(), old_key)
+        new_folder = os.path.join(_cases_dir(), new_key)
+        os.rename(old_folder, new_folder)
+        case["key"] = new_key
+
+    case.update({
+        "case_no": data.get("case_no", ""),
+        "case_name": new_name,
+        "year": new_year,
+        "court": data.get("court", ""),
+        "description": data.get("description", ""),
+        "last_updated": datetime.now().isoformat()
+    })
+
+    save_cases(cases)
+    return case
+
+def delete_case(case_key: str):
+    cases = load_cases()
+    cases = [c for c in cases if c["key"] != case_key]
+    save_cases(cases)
+
+    case_folder = os.path.join(_cases_dir(), case_key)
+    if os.path.exists(case_folder):
+        shutil.rmtree(case_folder)
+
+    return True

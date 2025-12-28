@@ -5,7 +5,7 @@ from datetime import datetime
 from backend.config_manager import set_base_path, get_base_path
 from backend.user_manager import create_user
 from backend.app_state import set_active_user, has_user
-from backend.case_manager import create_case, load_cases, load_links, delete_case_link,  add_case_link, get_case_folder
+from backend.case_manager import create_case, load_cases, load_links, delete_case_link,  add_case_link, get_case_folder, delete_case, update_case
 
 
 class Api:
@@ -85,44 +85,41 @@ class Api:
     # ==========================
 
     def get_links(self, data):
-        """
-        Get all links for a case
-        """
-        folder = get_case_folder(data["caseName"], data["year"])
-        links = load_links(folder)
-        return {"status": "ok", "links": links}
-
+        folder = get_case_folder(data["caseKey"])
+        return {"status": "ok", "links": load_links(folder)}
 
     def add_link(self, data):
-        """
-        Add a new link to a case
-        """
-        folder = get_case_folder(data["caseName"], data["year"])
-
+        folder = get_case_folder(data["caseKey"])
         link = add_case_link(
             folder,
             data["title"],
             data["url"],
             data.get("platform", "")
         )
-
         return {"status": "ok", "link": link}
 
-
     def delete_link(self, data):
-        """
-        Delete a link by ID
-        """
-        folder = get_case_folder(data["caseName"], data["year"])
-
+        folder = get_case_folder(data["caseKey"])
         deleted = delete_case_link(folder, data["id"])
+        return {"status": "ok", "deleted": deleted}
+    
+    def open_external(self, url):
+        import webbrowser
+        webbrowser.open(url)
+        return {"status": "ok"}
 
-        return {
-            "status": "ok" if deleted else "not_found",
-            "deleted": deleted
-        }
 
+    # MODIFY AND DELETE CASE
+    def update_case(self, data):
+        try:
+            case = update_case(data["old_key"], data)
+            return {"status": "ok", "case": case}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
 
+    def delete_case(self, data):
+        delete_case(data["key"])
+        return {"status": "ok"}
 
 
 api = Api()

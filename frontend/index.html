@@ -154,7 +154,7 @@
     </div>
 
     <div class="topbar-center">
-      <input placeholder="Search by Case Name or Case No…" />
+      <input class="search" type="text" placeholder="Search by Case Name or Case No…" />
     </div>
 
     <div class="topbar-right">
@@ -218,7 +218,18 @@
 
     <h3>Case Links</h3>
 
-    <div id="links-list"></div>
+    <table class="links-table">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Platform</th>
+          <th>Link</th>
+          <th>Open</th>
+          <th>Delete</th>
+        </tr>
+      </thead>
+      <tbody id="links-table-body"></tbody>
+    </table>
 
     <div id="no-links" class="hint hidden">
       No links added yet.

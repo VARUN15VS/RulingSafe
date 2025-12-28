@@ -9,6 +9,7 @@ const appState = {
 };
 
 let activeCaseKey = null;
+let editingCaseKey = null;
 
 /* =========================================================
    TABLE HELPERS
@@ -21,6 +22,12 @@ function clearTable() {
 
 function populateTable(cases = []) {
   clearTable();
+  // cache cases for edit operations
+  // Only set master cache ONCE
+  if (!window._allCases) {
+    window._allCases = cases;
+  }
+  window._cachedCases = cases;
 
   if (!cases.length) {
     appState.hasRulings = false;
@@ -46,13 +53,17 @@ function populateTable(cases = []) {
 
       <td>
         <span class="action link-btn" data-key="${c.key}">
-          🔗 ${c.links_count || 0}
+          🔗 
         </span>
       </td>
-
       <td class="actions">
-        ✏️ <span class="action">➕</span> <span class="action delete">🗑️</span>
-      </td>
+  <button class="icon-btn edit-btn" data-key="${c.key}" title="Edit" style="background: #111827">
+    ✏️
+  </button>
+  <button class="icon-btn delete-btn" data-key="${c.key}" title="Delete" style="background: #111827">
+    🗑️
+  </button>
+</td>
     `;
 
     tbody.appendChild(row);
@@ -61,6 +72,58 @@ function populateTable(cases = []) {
   appState.hasRulings = true;
 }
 
+/* =========================================================
+   EDIT & DELETE BUTTON LINKING (EVENT DELEGATION)
+   ========================================================= */
+
+document.addEventListener("click", async (e) => {
+
+  if (e.target.classList.contains("edit-btn")) {
+    editCase(e.target.dataset.key);
+    return;
+  }
+
+  if (e.target.classList.contains("delete-btn")) {
+    const caseKey = e.target.dataset.key;
+
+    if (!confirm("Are you sure you want to delete this case?")) return;
+
+    const res = await window.pywebview.api.delete_case({ key: caseKey });
+
+    if (res.status !== "ok") {
+      alert(res.message || "Failed to delete case");
+      return;
+    }
+
+    const casesRes = await window.pywebview.api.get_cases();
+    populateTable(casesRes.cases || []);
+    renderApp();
+  }
+});
+
+/* =========================================================
+   EDIT CASE FUNCTION (ALREADY YOURS)
+   ========================================================= */
+
+function editCase(caseKey) {
+  const cases = window._cachedCases || [];
+  const c = cases.find(x => x.key === caseKey);
+
+  if (!c) {
+    console.error("Case not found:", caseKey);
+    return;
+  }
+
+  editingCaseKey = caseKey;
+
+  document.getElementById("case-no").value = c.case_no || "";
+  document.getElementById("case-name").value = c.case_name;
+  document.getElementById("case-year").value = c.year;
+  document.getElementById("court").value = c.court || "";
+  document.getElementById("description").value = c.description || "";
+
+  document.getElementById("add-ruling-modal").classList.remove("hidden");
+}
 /* =========================================================
    SCREEN RENDER CONTROLLER
    ========================================================= */
@@ -158,6 +221,7 @@ document.getElementById("save-user")?.addEventListener("click", async () => {
 const addRulingModal = document.getElementById("add-ruling-modal");
 
 function openAddRulingModal() {
+  resetCaseForm();
   addRulingModal.classList.remove("hidden");
 }
 
@@ -220,6 +284,14 @@ document.getElementById("open-doc")?.addEventListener("click", async () => {
 /* =========================================================
    LINKS
    ========================================================= */
+function openExternal(url) {
+  if (window.pywebview) {
+    window.pywebview.api.open_external(url);
+  } else {
+    window.open(url, "_blank");
+  }
+}
+
 
 document.addEventListener("click", async e => {
   if (e.target.classList.contains("link-btn")) {
@@ -231,10 +303,11 @@ document.addEventListener("click", async e => {
   }
 });
 
-function renderLinks(links) {
-  const list = document.getElementById("links-list");
+function renderLinks(links = []) {
+  const tbody = document.getElementById("links-table-body");
   const empty = document.getElementById("no-links");
-  list.innerHTML = "";
+
+  tbody.innerHTML = "";
 
   if (!links.length) {
     empty.classList.remove("hidden");
@@ -244,18 +317,24 @@ function renderLinks(links) {
   empty.classList.add("hidden");
 
   links.forEach(link => {
-    const div = document.createElement("div");
-    div.className = "link-item";
-    div.innerHTML = `
-      <div>
-        <strong>${link.title}</strong><br/>
-        <small>${link.url}</small>
-      </div>
-      <span class="action delete" onclick="deleteLink('${link.id}')">🗑️</span>
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+      <td>${link.title}</td>
+      <td>${link.platform || "-"}</td>
+      <td class="truncate">${link.url}</td>
+      <td>
+        <span class="action" onclick="openExternal('${link.url}')">🔗</span>
+      </td>
+      <td>
+        <span class="action delete" onclick="deleteLink('${link.id}')">🗑️</span>
+      </td>
     `;
-    list.appendChild(div);
+
+    tbody.appendChild(row);
   });
 }
+
 
 document.getElementById("save-link")?.addEventListener("click", async () => {
   const title = document.getElementById("link-title").value.trim();
@@ -287,4 +366,111 @@ async function deleteLink(id) {
 
 document.getElementById("close-links")?.addEventListener("click", () => {
   document.getElementById("links-modal").classList.add("hidden");
+});
+
+function editCase(caseKey) {
+  const cases = window._cachedCases || [];
+  const c = cases.find(x => x.key === caseKey);
+
+  if (!c) {
+    console.error("Case not found for edit:", caseKey);
+    return;
+  }
+
+  editingCaseKey = caseKey;
+
+  document.getElementById("case-no").value = c.case_no || "";
+  document.getElementById("case-name").value = c.case_name;
+  document.getElementById("case-year").value = c.year;
+  document.getElementById("court").value = c.court || "";
+  document.getElementById("description").value = c.description || "";
+
+  addRulingModal.classList.remove("hidden");
+}
+
+document.getElementById("save-ruling").addEventListener("click", async () => {
+  const data = {
+    case_no: document.getElementById("case-no").value.trim(),
+    case_name: document.getElementById("case-name").value.trim(),
+    year: document.getElementById("case-year").value.trim(),
+    court: document.getElementById("court").value,
+    description: document.getElementById("description").value.trim()
+  };
+
+  if (!data.case_name || !data.year) {
+    return alert("Case Name and Year are required");
+  }
+
+  try {
+    let res;
+
+    if (editingCaseKey) {
+      res = await window.pywebview.api.update_case({
+        old_key: editingCaseKey,
+        ...data
+      });
+    } else {
+      res = await window.pywebview.api.create_case(data);
+    }
+
+    if (res.status !== "ok") {
+      return alert(res.message || "Operation failed");
+    }
+
+    editingCaseKey = null;
+    addRulingModal.classList.add("hidden");
+
+    const casesRes = await window.pywebview.api.get_cases();
+    window._cachedCases = casesRes.cases;
+    populateTable(casesRes.cases);
+    renderApp();
+  } catch (e) {
+    alert(e.message || "Error saving case");
+  }
+});
+
+function resetCaseForm() {
+  editingCaseKey = null;
+  ["case-no","case-name","case-year","court","description"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+}
+
+document.getElementById("cancel-ruling").onclick = () => {
+  resetCaseForm();
+  addRulingModal.classList.add("hidden");
+};
+
+// Search functionality
+function searchCases(query) {
+  query = query.trim().toLowerCase();
+
+  const source = window._allCases || [];
+
+  if (!query) {
+    populateTable(source);
+    return;
+  }
+
+  const scored = source
+    .map(c => {
+      let score = 0;
+
+      if (c.case_no && c.case_no.toLowerCase().includes(query)) score += 100;
+      if (c.case_name && c.case_name.toLowerCase().includes(query)) score += 75;
+      if (c.description && c.description.toLowerCase().includes(query)) score += 40;
+      if (c.court && c.court.toLowerCase().includes(query)) score += 20;
+
+      return { case: c, score };
+    })
+    .filter(item => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map(item => item.case);
+
+  populateTable(scored);
+}
+
+document.querySelector(".search")?.addEventListener("input", e => {
+  searchCases(e.target.value);
 });
