@@ -2,7 +2,7 @@ import os
 import webview
 from datetime import datetime
 
-from backend.config_manager import set_base_path, get_base_path, get_users
+from backend.config_manager import set_base_path, get_base_path, get_users, load_config
 from backend.user_manager import create_user, delete_user
 from backend.app_state import set_active_user, has_user, get_active_user, clear_active_user
 from backend.case_manager import create_case, load_cases, load_links, delete_case_link,  add_case_link, get_case_folder, delete_case, update_case
@@ -164,15 +164,53 @@ class Api:
         delete_case(data["key"])
         return {"status": "ok"}
 
+    # Window control APIs (for frameless titlebar)
+    def set_window(self, win):
+        self._window = win
+
+    def minimize(self):
+        try:
+            self._window.minimize()
+            return {"status": "ok"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
+    def maximize(self):
+        try:
+            if hasattr(self._window, 'is_maximized') and self._window.is_maximized():
+                self._window.restore()
+            else:
+                self._window.maximize()
+            return {"status": "ok"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
+    def close(self):
+        try:
+            self._window.destroy()
+            return {"status": "ok"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
+    def is_frameless(self):
+        cfg = load_config()
+        return bool(cfg.get("frameless_titlebar", False))
+
 
 api = Api()
+
+cfg = load_config()
+frameless = bool(cfg.get("frameless_titlebar", False))
 
 window = webview.create_window(
     title="RulingSafe",
     url="frontend/index.html",
     js_api=api,
     width=1200,
-    height=800
+    height=800,
+    frameless=frameless
 )
+
+api.set_window(window)
 
 webview.start()

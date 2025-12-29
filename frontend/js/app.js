@@ -168,6 +168,41 @@ window.addEventListener("pywebviewready", async () => {
     console.error("Startup sync failed:", err);
   }
 
+  // Setup frameless titlebar if enabled
+  try {
+    if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.is_frameless === 'function') {
+      const frameless = await window.pywebview.api.is_frameless();
+      if (frameless) {
+        const container = document.getElementById("titlebar-container");
+        const titlebarHTML = `
+          <div class="native-titlebar">
+            <div class="native-title">RulingSafe</div>
+            <div class="window-controls">
+              <button id="win-min" aria-label="Minimize">▁</button>
+              <button id="win-max" aria-label="Maximize">▢</button>
+              <button id="win-close" aria-label="Close">✕</button>
+            </div>
+          </div>`;
+        
+        container.innerHTML = titlebarHTML;
+        container.style.height = '34px';
+        document.body.style.paddingTop = '34px';
+        
+        document.getElementById('win-min')?.addEventListener('click', () => {
+          window.pywebview.api.minimize();
+        });
+        document.getElementById('win-max')?.addEventListener('click', () => {
+          window.pywebview.api.maximize();
+        });
+        document.getElementById('win-close')?.addEventListener('click', () => {
+          window.pywebview.api.close();
+        });
+      }
+    }
+  } catch (e) {
+    console.warn('Frameless titlebar setup failed:', e);
+  }
+
   renderApp();
 });
 

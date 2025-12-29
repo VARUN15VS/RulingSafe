@@ -20,5 +20,6 @@
       "middle_name": "",
       "last_name": ""
     }
-  ]
+  ],
+  "frameless_titlebar": true
 }
