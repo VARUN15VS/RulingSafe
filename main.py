@@ -4,7 +4,7 @@ from datetime import datetime
 
 from backend.config_manager import set_base_path, get_base_path, get_users
 from backend.user_manager import create_user, delete_user
-from backend.app_state import set_active_user, has_user, get_active_user
+from backend.app_state import set_active_user, has_user, get_active_user, clear_active_user
 from backend.case_manager import create_case, load_cases, load_links, delete_case_link,  add_case_link, get_case_folder, delete_case, update_case
 
 
@@ -59,6 +59,19 @@ class Api:
         user = next((u for u in users if u["username"] == username), None)
         return {"status": "ok", "user": user}
 
+    def get_all_users(self):
+        """Get list of all users"""
+        return {"status": "ok", "users": get_users()}
+
+    def switch_user(self, username):
+        """Switch to a different user"""
+        users = get_users()
+        if not any(u["username"] == username for u in users):
+            return {"status": "error", "message": "User not found"}
+        
+        set_active_user(username)
+        return {"status": "ok"}
+    
     def delete_account(self):
         """Delete current user and switch to another or clear active user"""
         username = get_active_user()
@@ -77,7 +90,6 @@ class Api:
             return {"status": "ok", "action": "switch_user", "next_user": next_user}
         else:
             # No users left, clear active user
-            from backend.app_state import clear_active_user
             clear_active_user()
             return {"status": "ok", "action": "no_users"}
     

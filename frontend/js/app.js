@@ -20,12 +20,11 @@ function clearTable() {
   if (tbody) tbody.innerHTML = "";
 }
 
-function populateTable(cases = []) {
+function populateTable(cases = [], setMaster = false) {
   clearTable();
-  // cache cases for edit operations
-  // Only set master cache ONCE
-  if (!window._allCases) {
-    window._allCases = cases;
+  // Update master cases when explicitly requested (backend load) or on first load
+  if (setMaster || typeof window._masterCases === "undefined") {
+    window._masterCases = cases;
   }
   window._cachedCases = cases;
 
@@ -96,7 +95,7 @@ document.addEventListener("click", async (e) => {
     }
 
     const casesRes = await window.pywebview.api.get_cases();
-    populateTable(casesRes.cases || []);
+    populateTable(casesRes.cases || [], true);
     renderApp();
   }
 });
@@ -163,7 +162,7 @@ window.addEventListener("pywebviewready", async () => {
 
     if (appState.userExists) {
       const res = await window.pywebview.api.get_cases();
-      populateTable(res.cases || []);
+      populateTable(res.cases || [], true);
     }
   } catch (err) {
     console.error("Startup sync failed:", err);
@@ -212,12 +211,12 @@ document.getElementById("save-user")?.addEventListener("click", async () => {
     document.getElementById("create-user-modal").classList.add("hidden");
     
     // Clear old user's cached cases and reload for new user
-    window._allCases = [];
+    window._masterCases = [];
     window._cachedCases = [];
     window._filteredCases = [];
     
     const casesRes = await window.pywebview.api.get_cases();
-    populateTable(casesRes.cases || []);
+    populateTable(casesRes.cases || [], true);
     
     renderApp();
   }
@@ -257,7 +256,7 @@ document.getElementById("save-ruling")?.addEventListener("click", async () => {
   const res = await window.pywebview.api.create_case(data);
   if (res.status === "ok") {
     const casesRes = await window.pywebview.api.get_cases();
-    populateTable(casesRes.cases || []);
+    populateTable(casesRes.cases || [], true);
     addRulingModal.classList.add("hidden");
     renderApp();
   }
@@ -431,7 +430,7 @@ document.getElementById("save-ruling").addEventListener("click", async () => {
 
     const casesRes = await window.pywebview.api.get_cases();
     window._cachedCases = casesRes.cases;
-    populateTable(casesRes.cases);
+    populateTable(casesRes.cases, true);
     renderApp();
   } catch (e) {
     alert(e.message || "Error saving case");
@@ -455,7 +454,7 @@ document.getElementById("cancel-ruling").onclick = () => {
 function searchCases(query) {
   query = query.trim().toLowerCase();
 
-  const source = window._allCases || [];
+  const source = window._masterCases || [];
 
   if (!query) {
     populateTable(source);
@@ -493,7 +492,7 @@ const filterState = {
 
 
 function applyFiltersAndSort() {
-  let data = [...window._allCases];
+  let data = [...window._masterCases];
 
   // FILTER: Court
   if (filterState.court !== "All") {
@@ -530,9 +529,9 @@ function applyFiltersAndSort() {
 
 document.querySelector(".filter-item[data-filter='court']")?.addEventListener("click", (e) => {
   e.stopPropagation();
-  if (!window._allCases || !window._allCases.length) return;
+  if (!window._masterCases || !window._masterCases.length) return;
   
-  const courts = ["All", ...new Set(window._allCases.map(c => c.court).filter(Boolean))];
+  const courts = ["All", ...new Set(window._masterCases.map(c => c.court).filter(Boolean))];
 
   showDropdown(courts, value => {
     filterState.court = value;
@@ -543,9 +542,9 @@ document.querySelector(".filter-item[data-filter='court']")?.addEventListener("c
 
 document.querySelector(".filter-item[data-filter='year']")?.addEventListener("click", (e) => {
   e.stopPropagation();
-  if (!window._allCases || !window._allCases.length) return;
+  if (!window._masterCases || !window._masterCases.length) return;
   
-  const years = ["All", ...new Set(window._allCases.map(c => c.year))].sort().reverse();
+  const years = ["All", ...new Set(window._masterCases.map(c => c.year))].sort().reverse();
 
   showDropdown(years, value => {
     filterState.year = value;
@@ -655,9 +654,16 @@ function showAccountMenu(avatarElement, event) {
         document.getElementById("create-user-modal")?.classList.remove("hidden");
         menu.classList.add("hidden");
       }},
-      { label: "🔁 Switch Account", action: () => {
-        alert("Switch Account (coming next)");
+      { label: "🔁 Switch Account", action: async () => {
         menu.classList.add("hidden");
+        
+        // Get all users
+        const res = await window.pywebview.api.get_all_users();
+        if (res.status !== "ok" || !res.users.length) return;
+        
+        // Show user list as dropdown
+        const usernames = res.users.map(u => u.username);
+        showUserSwitchMenu(usernames);
       }},
       { label: "🗑️ Delete Account", action: async () => {
         menu.classList.add("hidden");
@@ -669,18 +675,18 @@ function showAccountMenu(avatarElement, event) {
           if (res.action === "no_users") {
             // No users left, reset app state and show first-time screen
             appState.userExists = false;
-            window._allCases = [];
+            window._masterCases = [];
             window._cachedCases = [];
             window._filteredCases = [];
             renderApp();
           } else if (res.action === "switch_user") {
             // Switch to next user and reload
-            window._allCases = [];
+            window._masterCases = [];
             window._cachedCases = [];
             window._filteredCases = [];
             
             const casesRes = await window.pywebview.api.get_cases();
-            populateTable(casesRes.cases || []);
+            populateTable(casesRes.cases || [], true);
             renderApp();
           }
         }
@@ -726,5 +732,63 @@ function closeAccountMenu(e) {
   if (menu && !e.target.closest(".avatar") && !e.target.closest("#account-menu")) {
     menu.classList.add("hidden");
     document.removeEventListener("click", closeAccountMenu);
+  }
+}
+async function showUserSwitchMenu(usernames) {
+  let menu = document.getElementById("switch-user-menu");
+
+  if (!menu) {
+    menu = document.createElement("div");
+    menu.id = "switch-user-menu";
+    menu.className = "doc-menu";
+    document.body.appendChild(menu);
+  }
+
+  menu.innerHTML = "";
+
+  usernames.forEach(username => {
+    const btn = document.createElement("button");
+    btn.textContent = username;
+    btn.onclick = async (e) => {
+      e.stopPropagation();
+      
+      // Switch to user
+      const res = await window.pywebview.api.switch_user(username);
+      
+      if (res.status === "ok") {
+        // Clear caches and reload
+        window._masterCases = [];
+        window._cachedCases = [];
+        window._filteredCases = [];
+        
+        // Fetch new user's cases
+        const casesRes = await window.pywebview.api.get_cases();
+        populateTable(casesRes.cases || [], true);
+        
+        // Close menu and re-render
+        menu.classList.add("hidden");
+        renderApp();
+      }
+    };
+    menu.appendChild(btn);
+  });
+
+  // Position near center or below avatar
+  menu.style.top = "50%";
+  menu.style.left = "50%";
+  menu.style.transform = "translate(-50%, -50%)";
+  menu.classList.remove("hidden");
+
+  // Close on outside click
+  setTimeout(() => {
+    document.addEventListener("click", closeSwitchUserMenu);
+  }, 0);
+}
+
+function closeSwitchUserMenu(e) {
+  const menu = document.getElementById("switch-user-menu");
+  if (menu && !e.target.closest("#switch-user-menu")) {
+    menu.classList.add("hidden");
+    document.removeEventListener("click", closeSwitchUserMenu);
   }
 }
