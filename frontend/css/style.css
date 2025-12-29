@@ -197,6 +197,7 @@ body {
   align-items: center;
   justify-content: center;
   font-weight: bold;
+  cursor: pointer;
 }
 
 .empty-content {
@@ -349,3 +350,45 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ACCOUNT MENU */
+.account-menu {
+  position: fixed;
+  background: #020617;
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+  padding: 6px;
+  width: 180px;
+  z-index: 9999;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+}
+
+.account-menu button {
+  width: 100%;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  color: #e5e7eb;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.account-menu button:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+.account-menu .danger {
+  color: #f87171;
+}
+
+.account-menu .danger:hover {
+  background: rgba(248,113,113,0.1);
+}
+
+.avatar {
+  pointer-events: auto !important;
+  z-index: 9999;
+}
+

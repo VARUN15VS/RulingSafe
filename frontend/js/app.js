@@ -474,3 +474,217 @@ function searchCases(query) {
 document.querySelector(".search")?.addEventListener("input", e => {
   searchCases(e.target.value);
 });
+
+// Filtes
+const filterState = {
+  court: "All",
+  year: "All",
+  sort: "last_updated"
+};
+
+
+function applyFiltersAndSort() {
+  let data = [...window._allCases];
+
+  // FILTER: Court
+  if (filterState.court !== "All") {
+    data = data.filter(c => c.court === filterState.court);
+  }
+
+  // FILTER: Year
+  if (filterState.year !== "All") {
+    data = data.filter(c => c.year === filterState.year);
+  }
+
+  // SORT
+  switch (filterState.sort) {
+    case "last_updated":
+      data.sort((a, b) => new Date(b.last_updated) - new Date(a.last_updated));
+      break;
+
+    case "case_name":
+      data.sort((a, b) => a.case_name.localeCompare(b.case_name));
+      break;
+
+    case "year":
+      data.sort((a, b) => b.year.localeCompare(a.year));
+      break;
+
+    case "court":
+      data.sort((a, b) => (a.court || "").localeCompare(b.court || ""));
+      break;
+  }
+
+  window._filteredCases = data;
+  populateTable(data);
+}
+
+document.querySelector(".filter-item[data-filter='court']")?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (!window._allCases || !window._allCases.length) return;
+  
+  const courts = ["All", ...new Set(window._allCases.map(c => c.court).filter(Boolean))];
+
+  showDropdown(courts, value => {
+    filterState.court = value;
+    document.querySelector(".filter-item[data-filter='court'] span").textContent = value;
+    applyFiltersAndSort();
+  }, e);
+});
+
+document.querySelector(".filter-item[data-filter='year']")?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (!window._allCases || !window._allCases.length) return;
+  
+  const years = ["All", ...new Set(window._allCases.map(c => c.year))].sort().reverse();
+
+  showDropdown(years, value => {
+    filterState.year = value;
+    document.querySelector(".filter-item[data-filter='year'] span").textContent = value;
+    applyFiltersAndSort();
+  }, e);
+});
+
+document.querySelector(".filter-item[data-filter='sort']")?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const sorts = [
+    { label: "Last Updated", value: "last_updated" },
+    { label: "Case Name", value: "case_name" },
+    { label: "Year", value: "year" },
+    { label: "Court", value: "court" }
+  ];
+
+  showDropdown(sorts.map(s => s.label), label => {
+    const selected = sorts.find(s => s.label === label);
+    filterState.sort = selected.value;
+    document.querySelector(".filter-item[data-filter='sort'] span").textContent = label;
+    applyFiltersAndSort();
+  }, e);
+});
+
+function showDropdown(items, onSelect, event) {
+  let menu = document.getElementById("filter-dropdown");
+
+  if (!menu) {
+    menu = document.createElement("div");
+    menu.id = "filter-dropdown";
+    menu.className = "doc-menu";
+    document.body.appendChild(menu);
+  }
+
+  menu.innerHTML = "";
+
+  items.forEach(item => {
+    const btn = document.createElement("button");
+    btn.textContent = item;
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      onSelect(item);
+      menu.classList.add("hidden");
+    };
+    menu.appendChild(btn);
+  });
+
+  // Position the menu below the clicked filter item
+  if (event) {
+    menu.style.top = (event.target.offsetTop + event.target.offsetHeight + 5) + "px";
+    menu.style.left = event.target.offsetLeft + "px";
+  }
+
+  menu.classList.remove("hidden");
+  
+  // Close dropdown when clicking outside (but don't use 'once' to avoid conflicts)
+  setTimeout(() => {
+    document.addEventListener("click", closeDropdown);
+  }, 0);
+}
+
+function closeDropdown(e) {
+  const menu = document.getElementById("filter-dropdown");
+  if (menu && !e.target.closest(".filter-item") && !e.target.closest("#filter-dropdown")) {
+    menu.classList.add("hidden");
+    document.removeEventListener("click", closeDropdown);
+  }
+}
+
+// ACCOUNT MENU - Dynamic dropdown
+document.addEventListener("click", (e) => {
+  const clickedAvatar = e.target.closest(".avatar");
+  if (clickedAvatar) {
+    e.stopPropagation();
+    showAccountMenu(clickedAvatar, e);
+  }
+});
+
+function showAccountMenu(avatarElement, event) {
+  let menu = document.getElementById("account-menu");
+
+  if (!menu) {
+    menu = document.createElement("div");
+    menu.id = "account-menu";
+    menu.className = "doc-menu";
+    document.body.appendChild(menu);
+  }
+
+  // Toggle if already open
+  if (!menu.classList.contains("hidden")) {
+    menu.classList.add("hidden");
+    return;
+  }
+
+  menu.innerHTML = "";
+
+  // Menu items
+  const items = [
+    { label: "➕ Add Account", action: () => {
+      document.getElementById("create-user-modal")?.classList.remove("hidden");
+      menu.classList.add("hidden");
+    }},
+    { label: "🔁 Switch Account", action: () => {
+      alert("Switch Account (coming next)");
+      menu.classList.add("hidden");
+    }},
+    { label: "🗑️ Delete Account", action: async () => {
+      menu.classList.add("hidden");
+      if (!confirm("This will permanently delete this account. Continue?")) return;
+      await window.pywebview.api.delete_account();
+      location.reload();
+    }}
+  ];
+
+  items.forEach(item => {
+    const btn = document.createElement("button");
+    btn.textContent = item.label;
+    if (item.label.includes("Delete")) {
+      btn.style.color = "#f87171"; // danger color
+    }
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      item.action();
+    };
+    menu.appendChild(btn);
+  });
+
+  // Position below avatar, right-aligned
+  const rect = avatarElement.getBoundingClientRect();
+  const menuWidth = menu.offsetWidth || 180;
+  let left = rect.right - menuWidth;
+  if (left < 8) left = rect.left;
+
+  menu.style.top = Math.round(rect.bottom + 8) + "px";
+  menu.style.left = Math.round(left) + "px";
+  menu.classList.remove("hidden");
+
+  // Close on outside click
+  setTimeout(() => {
+    document.addEventListener("click", closeAccountMenu);
+  }, 0);
+}
+
+function closeAccountMenu(e) {
+  const menu = document.getElementById("account-menu");
+  if (menu && !e.target.closest(".avatar") && !e.target.closest("#account-menu")) {
+    menu.classList.add("hidden");
+    document.removeEventListener("click", closeAccountMenu);
+  }
+}
