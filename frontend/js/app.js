@@ -176,7 +176,10 @@ window.addEventListener("pywebviewready", async () => {
         const container = document.getElementById("titlebar-container");
         const titlebarHTML = `
           <div class="native-titlebar">
-            <div class="native-title">RulingSafe</div>
+            <div class="native-title-left">
+              <img src="assets/logo-white.svg" class="titlebar-logo" alt="RulingSafe" />
+              <div class="native-title">RulingSafe</div>
+            </div>
             <div class="window-controls">
               <button id="win-min" aria-label="Minimize">▁</button>
               <button id="win-max" aria-label="Maximize">▢</button>

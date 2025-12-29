@@ -9,9 +9,7 @@ from backend.case_manager import create_case, load_cases, load_links, delete_cas
 
 
 class Api:
-    # ==========================
     # STORAGE LOCATION
-    # ==========================
     def pick_storage_location(self):
         folder = webview.windows[0].create_file_dialog(
             webview.FOLDER_DIALOG,
@@ -33,9 +31,7 @@ class Api:
     def has_base_path(self):
         return bool(get_base_path())
 
-    # ==========================
     # USER MANAGEMENT
-    # ==========================
     def create_user(self, data):
         user = create_user(
             data["username"],
@@ -93,9 +89,7 @@ class Api:
             clear_active_user()
             return {"status": "ok", "action": "no_users"}
     
-    # ==========================
     # CASE / RULING MANAGEMENT
-    # ==========================
     def create_case(self, data):
         case = create_case(data)
         return {"status": "ok", "case": case}
@@ -121,12 +115,7 @@ class Api:
 
         return {"status": "ok"}
 
-    
-
-    # ==========================
     # LINKS MANAGEMENT
-    # ==========================
-
     def get_links(self, data):
         folder = get_case_folder(data["caseKey"])
         return {"status": "ok", "links": load_links(folder)}

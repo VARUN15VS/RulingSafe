@@ -45,6 +45,18 @@ body {
   letter-spacing: 0.5px;
 }
 
+#titlebar-container .native-title-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#titlebar-container .titlebar-logo {
+  width: 18px;
+  height: 18px;
+  display: inline-block;
+}
+
 #titlebar-container .window-controls {
   display: flex;
   gap: 8px;

@@ -104,15 +104,8 @@ def create_case(data):
 
     return case
 
-
-# =========================================================
 # INTERNAL HELPERS
-# =========================================================
-
 def _links_file(case_folder: str) -> str:
-    """
-    Returns absolute path to links.json inside a case folder
-    """
     return os.path.join(case_folder, "links.json")
 
 
@@ -136,31 +129,17 @@ def _safe_read_json(path: str) -> dict:
 
 
 def _safe_write_json(path: str, data: dict):
-    """
-    Atomically write JSON to disk
-    """
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
-
-# =========================================================
 # PUBLIC API
-# =========================================================
-
 def load_links(case_folder: str) -> list:
-    """
-    Load all links for a case
-    """
     path = _links_file(case_folder)
     data = _safe_read_json(path)
     return data.get("links", [])
 
-
 def add_case_link(case_folder: str, title: str, url: str, platform: str = ""):
-    """
-    Add a new link to the case
-    """
     path = _links_file(case_folder)
     data = _safe_read_json(path)
 
@@ -179,10 +158,6 @@ def add_case_link(case_folder: str, title: str, url: str, platform: str = ""):
 
 
 def delete_case_link(case_folder: str, link_id: str) -> bool:
-    """
-    Delete a link by ID
-    Returns True if deleted, False otherwise
-    """
     path = _links_file(case_folder)
     data = _safe_read_json(path)
 
