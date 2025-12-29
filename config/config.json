@@ -1,4 +1,30 @@
 {
   "base_path": "C:\\Users\\Varun\\OneDrive\\Desktop\\RulingSafe",
-  "active_user": "ram10"
+  "active_user": "abcabc",
+  "users": [
+    {
+      "username": "v15",
+      "first_name": "Varun",
+      "middle_name": "",
+      "last_name": ""
+    },
+    {
+      "username": "ram10",
+      "first_name": "Rampal",
+      "middle_name": "",
+      "last_name": ""
+    },
+    {
+      "username": "abc",
+      "first_name": "abc",
+      "middle_name": "",
+      "last_name": ""
+    },
+    {
+      "username": "abcabc",
+      "first_name": "abcabc",
+      "middle_name": "",
+      "last_name": ""
+    }
+  ]
 }

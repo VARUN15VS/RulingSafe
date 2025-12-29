@@ -26,3 +26,38 @@ def set_base_path(path):
     config = load_config()
     config["base_path"] = path
     save_config(config)
+
+
+# =========================
+# USER HELPERS (IMPORTANT)
+# =========================
+
+def get_users():
+    return load_config().get("users", [])
+
+
+def add_user(user):
+    config = load_config()
+    users = config.get("users", [])
+
+    if any(u["username"] == user["username"] for u in users):
+        raise ValueError("User already exists")
+
+    users.append(user)
+    config["users"] = users
+    save_config(config)
+
+
+def set_active_user(username):
+    config = load_config()
+
+    users = config.get("users", [])
+    if not any(u["username"] == username for u in users):
+        raise ValueError("User does not exist")
+
+    config["active_user"] = username
+    save_config(config)
+
+
+def get_active_user():
+    return load_config().get("active_user")

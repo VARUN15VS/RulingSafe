@@ -210,6 +210,15 @@ document.getElementById("save-user")?.addEventListener("click", async () => {
   if (res.status === "ok") {
     appState.userExists = true;
     document.getElementById("create-user-modal").classList.add("hidden");
+    
+    // Clear old user's cached cases and reload for new user
+    window._allCases = [];
+    window._cachedCases = [];
+    window._filteredCases = [];
+    
+    const casesRes = await window.pywebview.api.get_cases();
+    populateTable(casesRes.cases || []);
+    
     renderApp();
   }
 });
@@ -634,36 +643,47 @@ function showAccountMenu(avatarElement, event) {
 
   menu.innerHTML = "";
 
-  // Menu items
-  const items = [
-    { label: "➕ Add Account", action: () => {
-      document.getElementById("create-user-modal")?.classList.remove("hidden");
-      menu.classList.add("hidden");
-    }},
-    { label: "🔁 Switch Account", action: () => {
-      alert("Switch Account (coming next)");
-      menu.classList.add("hidden");
-    }},
-    { label: "🗑️ Delete Account", action: async () => {
-      menu.classList.add("hidden");
-      if (!confirm("This will permanently delete this account. Continue?")) return;
-      await window.pywebview.api.delete_account();
-      location.reload();
-    }}
-  ];
+  // Fetch current user
+  (async () => {
+    const res = await window.pywebview.api.get_current_user();
+    const username = res.user?.username || "User";
 
-  items.forEach(item => {
-    const btn = document.createElement("button");
-    btn.textContent = item.label;
-    if (item.label.includes("Delete")) {
-      btn.style.color = "#f87171"; // danger color
-    }
-    btn.onclick = (e) => {
-      e.stopPropagation();
-      item.action();
-    };
-    menu.appendChild(btn);
-  });
+    // Menu items
+    const items = [
+      { label: `👤 ${username}`, action: null, disabled: true },
+      { label: "➕ Add Account", action: () => {
+        document.getElementById("create-user-modal")?.classList.remove("hidden");
+        menu.classList.add("hidden");
+      }},
+      { label: "🔁 Switch Account", action: () => {
+        alert("Switch Account (coming next)");
+        menu.classList.add("hidden");
+      }},
+      { label: "🗑️ Delete Account", action: async () => {
+        menu.classList.add("hidden");
+        if (!confirm("This will permanently delete this account. Continue?")) return;
+        await window.pywebview.api.delete_account();
+        location.reload();
+      }}
+    ];
+
+    items.forEach(item => {
+      const btn = document.createElement("button");
+      btn.textContent = item.label;
+      if (item.disabled) {
+        btn.style.pointerEvents = "none";
+        btn.style.opacity = "0.6";
+      }
+      if (item.label.includes("Delete")) {
+        btn.style.color = "#f87171"; // danger color
+      }
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        if (item.action) item.action();
+      };
+      menu.appendChild(btn);
+    });
+  })();
 
   // Position below avatar, right-aligned
   const rect = avatarElement.getBoundingClientRect();

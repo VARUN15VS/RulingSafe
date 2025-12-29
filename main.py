@@ -2,9 +2,9 @@ import os
 import webview
 from datetime import datetime
 
-from backend.config_manager import set_base_path, get_base_path
+from backend.config_manager import set_base_path, get_base_path, get_users
 from backend.user_manager import create_user
-from backend.app_state import set_active_user, has_user
+from backend.app_state import set_active_user, has_user, get_active_user
 from backend.case_manager import create_case, load_cases, load_links, delete_case_link,  add_case_link, get_case_folder, delete_case, update_case
 
 
@@ -49,6 +49,15 @@ class Api:
 
     def has_user(self):
         return has_user()
+
+    def get_current_user(self):
+        username = get_active_user()
+        if not username:
+            return {"status": "error", "message": "No active user"}
+        
+        users = get_users()
+        user = next((u for u in users if u["username"] == username), None)
+        return {"status": "ok", "user": user}
     
     # ==========================
     # CASE / RULING MANAGEMENT

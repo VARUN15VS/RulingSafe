@@ -1,7 +1,7 @@
 import os
 import json
 from datetime import datetime
-from backend.config_manager import get_base_path
+from backend.config_manager import get_base_path, load_config, save_config
 
 
 def _ensure_base_path():
@@ -45,29 +45,36 @@ def username_exists(username: str) -> bool:
     return os.path.exists(user_folder)
 
 
-def create_user(username, first, middle, last):
-    if username_exists(username):
-        raise ValueError("Username already exists")
+def create_user(username, first_name="", middle_name="", last_name=""):
+    config = load_config()
+
+    # Ensure users list exists
+    users = config.get("users", [])
+
+    # Check duplicate
+    if any(u["username"] == username for u in users):
+        raise ValueError("User already exists")
 
     user = {
         "username": username,
-        "first_name": first,
-        "middle_name": middle,
-        "last_name": last,
-        "created_at": datetime.now().isoformat()
+        "first_name": first_name,
+        "middle_name": middle_name,
+        "last_name": last_name
     }
 
-    # Save user in users.json
-    users = load_users()
     users.append(user)
+    config["users"] = users
+
+    save_config(config)
+    
+    # Also save to users.json file
     save_users(users)
 
-    # Create folder structure
-    user_path = os.path.join(_users_dir(), username)
-    cases_path = os.path.join(user_path, "cases")
-
-    os.makedirs(cases_path, exist_ok=True)
-
-    print("User folder created at:", user_path)
+    # Create user folder
+    base_path = config.get("base_path")
+    if base_path:
+        user_path = os.path.join(base_path, "users", username)
+        os.makedirs(user_path, exist_ok=True)
+        os.makedirs(os.path.join(user_path, "cases"), exist_ok=True)
 
     return user
