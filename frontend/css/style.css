@@ -57,6 +57,27 @@ body {
   display: inline-block;
 }
 
+/* Footer credit */
+.app-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 8px;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+  z-index: 2000;
+}
+.app-footer-inner {
+  background: rgba(10, 20, 30, 0.35);
+  color: #9fb7d9;
+  font-size: 11px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  pointer-events: auto;
+  backdrop-filter: blur(6px);
+}
+
 #titlebar-container .window-controls {
   display: flex;
   gap: 8px;
