@@ -662,8 +662,28 @@ function showAccountMenu(avatarElement, event) {
       { label: "🗑️ Delete Account", action: async () => {
         menu.classList.add("hidden");
         if (!confirm("This will permanently delete this account. Continue?")) return;
-        await window.pywebview.api.delete_account();
-        location.reload();
+        
+        const res = await window.pywebview.api.delete_account();
+        
+        if (res.status === "ok") {
+          if (res.action === "no_users") {
+            // No users left, reset app state and show first-time screen
+            appState.userExists = false;
+            window._allCases = [];
+            window._cachedCases = [];
+            window._filteredCases = [];
+            renderApp();
+          } else if (res.action === "switch_user") {
+            // Switch to next user and reload
+            window._allCases = [];
+            window._cachedCases = [];
+            window._filteredCases = [];
+            
+            const casesRes = await window.pywebview.api.get_cases();
+            populateTable(casesRes.cases || []);
+            renderApp();
+          }
+        }
       }}
     ];
 

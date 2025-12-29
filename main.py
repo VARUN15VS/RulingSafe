@@ -3,7 +3,7 @@ import webview
 from datetime import datetime
 
 from backend.config_manager import set_base_path, get_base_path, get_users
-from backend.user_manager import create_user
+from backend.user_manager import create_user, delete_user
 from backend.app_state import set_active_user, has_user, get_active_user
 from backend.case_manager import create_case, load_cases, load_links, delete_case_link,  add_case_link, get_case_folder, delete_case, update_case
 
@@ -58,6 +58,28 @@ class Api:
         users = get_users()
         user = next((u for u in users if u["username"] == username), None)
         return {"status": "ok", "user": user}
+
+    def delete_account(self):
+        """Delete current user and switch to another or clear active user"""
+        username = get_active_user()
+        if not username:
+            return {"status": "error", "message": "No active user"}
+        
+        delete_user(username)
+        
+        # Get remaining users
+        users = get_users()
+        
+        if users:
+            # Switch to first remaining user
+            next_user = users[0]["username"]
+            set_active_user(next_user)
+            return {"status": "ok", "action": "switch_user", "next_user": next_user}
+        else:
+            # No users left, clear active user
+            from backend.app_state import clear_active_user
+            clear_active_user()
+            return {"status": "ok", "action": "no_users"}
     
     # ==========================
     # CASE / RULING MANAGEMENT

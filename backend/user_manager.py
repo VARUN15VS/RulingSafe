@@ -1,5 +1,6 @@
 import os
 import json
+import shutil
 from datetime import datetime
 from backend.config_manager import get_base_path, load_config, save_config
 
@@ -78,3 +79,26 @@ def create_user(username, first_name="", middle_name="", last_name=""):
         os.makedirs(os.path.join(user_path, "cases"), exist_ok=True)
 
     return user
+
+
+def delete_user(username):
+    """Delete a user account, folder, and update config/users.json"""
+    config = load_config()
+    
+    # Remove from config users list
+    users = config.get("users", [])
+    users = [u for u in users if u["username"] != username]
+    config["users"] = users
+    save_config(config)
+    
+    # Remove from users.json
+    save_users(users)
+    
+    # Delete user folder
+    base_path = config.get("base_path")
+    if base_path:
+        user_path = os.path.join(base_path, "users", username)
+        if os.path.exists(user_path):
+            shutil.rmtree(user_path)
+    
+    return {"status": "ok"}
