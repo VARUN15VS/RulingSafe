@@ -3,7 +3,7 @@
 A simple offline legal ruling manager built with PyWebView.
 
 <p align="center">
-  <img src="assets/rulingsafe.ico" alt="RulingSafe Logo" width="180"/>
+  <img src="frontend/assets/logo-white.svg" alt="RulingSafe Logo" width="180"/>
 </p>
 
 RulingSafe is a **free, offline desktop application** designed to help lawyers and legal professionals
