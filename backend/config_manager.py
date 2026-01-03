@@ -1,7 +1,10 @@
 import json
 import os
 
-CONFIG_DIR = os.path.join(os.getcwd(), "config")
+CONFIG_DIR = os.path.join(
+    os.getenv("APPDATA"),
+    "RulingSafe"
+)
 CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
 
 
